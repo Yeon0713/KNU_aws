@@ -5,7 +5,7 @@ applications:
       phases:
         preBuild:
           commands:
-            # Force cache invalidation and Flutter setup
+            # Force cache invalidation and Flutter setup with xz installation
             - |
               echo "=== 캐시 무효화 및 Flutter 설치 시작 ==="
               echo "빌드 시간: $(date)"
@@ -14,24 +14,86 @@ applications:
               rm -rf flutter
               rm -rf ~/.pub-cache
               
-              # Flutter 새로 설치
-              echo "Flutter 새로 설치 중..."
+              # xz 패키지 설치 시도 (여러 방법)
+              echo "xz 패키지 설치 시도..."
+              if command -v yum >/dev/null 2>&1; then
+                echo "yum으로 xz 설치 시도..."
+                yum install -y xz 2>/dev/null || echo "yum 설치 실패 (권한 문제)"
+              fi
+              
+              if command -v apt-get >/dev/null 2>&1; then
+                echo "apt-get으로 xz-utils 설치 시도..."
+                apt-get update && apt-get install -y xz-utils 2>/dev/null || echo "apt-get 설치 실패 (권한 문제)"
+              fi
+              
+              # xz 명령어 확인
+              if command -v xz >/dev/null 2>&1; then
+                echo "✅ xz 명령어 사용 가능"
+                xz --version
+              else
+                echo "❌ xz 명령어 없음 - 대체 방법 사용"
+              fi
+              
+              # Flutter 다운로드 및 설치
+              echo "Flutter 다운로드 중..."
               wget -O flutter.tar.xz https://storage.googleapis.com/flutter_infra_release/releases/stable/linux/flutter_linux_3.16.0-stable.tar.xz
-              tar xf flutter.tar.xz
-              rm flutter.tar.xz
-              echo "Flutter 설치 완료"
+              
+              # 압축 해제 (여러 방법 시도)
+              echo "Flutter 압축 해제 시도..."
+              if command -v xz >/dev/null 2>&1; then
+                echo "xz로 압축 해제..."
+                xz -d flutter.tar.xz && tar -xf flutter.tar
+              else
+                echo "Python으로 압축 해제 시도..."
+                python3 -c "
+import lzma
+import tarfile
+import shutil
+
+# xz 파일을 tar 파일로 변환
+with lzma.open('flutter.tar.xz', 'rb') as xz_file:
+    with open('flutter.tar', 'wb') as tar_file:
+        shutil.copyfileobj(xz_file, tar_file)
+
+# tar 파일 압축 해제
+with tarfile.open('flutter.tar', 'r') as tar:
+    tar.extractall()
+"
+              fi
+              
+              # 압축 해제 결과 확인
+              if [ -d "flutter" ]; then
+                echo "✅ Flutter 압축 해제 성공"
+                ls -la flutter/
+              else
+                echo "❌ Flutter 압축 해제 실패"
+                echo "현재 디렉토리 내용:"
+                ls -la
+                exit 1
+              fi
+              
+              # 임시 파일 정리
+              rm -f flutter.tar.xz flutter.tar
               
               # PATH 설정 및 Flutter 검증
               export PATH="$PATH:$PWD/flutter/bin"
               echo "PATH 설정: $PATH"
               
-              # Flutter 버전 확인
-              flutter --version
-              flutter doctor -v
+              # Flutter 실행 가능 여부 확인
+              if [ -f "flutter/bin/flutter" ]; then
+                echo "✅ Flutter 바이너리 존재함"
+                chmod +x flutter/bin/flutter
+                flutter/bin/flutter --version
+                flutter/bin/flutter doctor -v
+                
+                # 의존성 설치
+                echo "Flutter 의존성 설치 중..."
+                flutter/bin/flutter pub get
+              else
+                echo "❌ Flutter 바이너리가 존재하지 않음"
+                exit 1
+              fi
               
-              # 의존성 설치
-              echo "Flutter 의존성 설치 중..."
-              flutter pub get
               echo "=== preBuild 단계 완료 ==="
         build:
           commands:
@@ -40,9 +102,8 @@ applications:
               echo "=== 강제 새로운 빌드 시작 ==="
               echo "빌드 시간: $(date)"
               
-              # Flutter 절대 경로 설정
-              FLUTTER_ROOT="/codebuild/output/src$(echo $CODEBUILD_SRC_DIR | cut -d'/' -f5-)/flutter"
-              FLUTTER_BIN="$FLUTTER_ROOT/bin/flutter"
+              # Flutter 절대 경로 설정 (preBuild에서 설치된 위치)
+              FLUTTER_BIN="$PWD/flutter/bin/flutter"
               
               echo "Flutter 경로: $FLUTTER_BIN"
               
@@ -53,10 +114,10 @@ applications:
               else
                 echo "❌ Flutter 바이너리를 찾을 수 없음"
                 echo "현재 작업 디렉토리: $(pwd)"
-                echo "상위 디렉토리 확인:"
-                ls -la ../
+                echo "디렉토리 내용:"
+                ls -la
                 echo "Flutter 디렉토리 찾기:"
-                find .. -name "flutter" -type d 2>/dev/null || echo "Flutter 디렉토리 없음"
+                find . -name "flutter" -type d 2>/dev/null || echo "Flutter 디렉토리 없음"
                 exit 1
               fi
               
