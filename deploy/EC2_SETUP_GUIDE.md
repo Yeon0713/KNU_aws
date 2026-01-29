@@ -10,7 +10,9 @@
 
 ### 1.2 인스턴스 설정
 - **이름**: `knu-health-backend`
-- **AMI**: Amazon Linux 2 AMI (HVM) - Kernel 5.10, SSD Volume Type
+- **AMI**: 
+  - **Ubuntu**: Ubuntu Server 22.04 LTS (HVM), SSD Volume Type (추천)
+  - **Amazon Linux**: Amazon Linux 2 AMI (HVM) - Kernel 5.10, SSD Volume Type
 - **인스턴스 유형**: t3.medium (2 vCPU, 4GB RAM)
 - **키 페어**: 새로 생성하거나 기존 키 사용
 
@@ -26,6 +28,18 @@
 ### 1.4 사용자 데이터 (User Data)
 **고급 세부 정보** → **사용자 데이터**에 다음 입력:
 
+**Ubuntu용**:
+```bash
+#!/bin/bash
+apt update -y
+apt install -y git python3 python3-pip
+cd /home/ubuntu
+git clone https://github.com/yun-yeo-heon/KNU_aws.git
+chown -R ubuntu:ubuntu KNU_aws
+echo "EC2 초기 설정 완료" > /tmp/setup.log
+```
+
+**Amazon Linux용**:
 ```bash
 #!/bin/bash
 yum update -y
@@ -43,14 +57,21 @@ echo "EC2 초기 설정 완료" > /tmp/setup.log
 # 키 파일 권한 설정
 chmod 400 your-key.pem
 
-# SSH 접속 (퍼블릭 IP는 EC2 대시보드에서 확인)
+# Ubuntu 인스턴스 접속
+ssh -i your-key.pem ubuntu@YOUR_PUBLIC_IP
+
+# 또는 Amazon Linux 인스턴스 접속
 ssh -i your-key.pem ec2-user@YOUR_PUBLIC_IP
 ```
 
 ### 2.2 배포 스크립트 실행
 ```bash
 cd KNU_aws
-chmod +x deploy/ec2-deploy.sh
+
+# Ubuntu용 배포 스크립트
+./deploy/ec2-deploy-ubuntu.sh
+
+# 또는 Amazon Linux용 배포 스크립트
 ./deploy/ec2-deploy.sh
 ```
 
@@ -125,10 +146,12 @@ static const String baseUrl = 'http://YOUR_EC2_PUBLIC_IP:8000';
 
 ### 포트 8000 접속 안 됨
 ```bash
-# 방화벽 확인
-sudo iptables -L
+# Ubuntu - UFW 방화벽 확인
+sudo ufw status
+sudo ufw allow 8000
 
-# 포트 열기
+# Amazon Linux - iptables 확인
+sudo iptables -L
 sudo iptables -I INPUT -p tcp --dport 8000 -j ACCEPT
 
 # 서비스 상태 확인
@@ -137,8 +160,14 @@ sudo systemctl status knu-health
 
 ### AWS Bedrock 권한 오류
 ```bash
-# AWS CLI 설치 및 설정
+# Ubuntu/Amazon Linux 공통 - AWS CLI 설치 및 설정
+# Ubuntu
+sudo apt install -y awscli
+
+# Amazon Linux
 sudo yum install -y awscli
+
+# AWS 설정
 aws configure
 
 # Bedrock 권한 테스트
