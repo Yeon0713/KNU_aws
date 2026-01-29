@@ -45,20 +45,7 @@ applications:
                 xz -d flutter.tar.xz && tar -xf flutter.tar
               else
                 echo "Python으로 압축 해제 시도..."
-                python3 -c "
-import lzma
-import tarfile
-import shutil
-
-# xz 파일을 tar 파일로 변환
-with lzma.open('flutter.tar.xz', 'rb') as xz_file:
-    with open('flutter.tar', 'wb') as tar_file:
-        shutil.copyfileobj(xz_file, tar_file)
-
-# tar 파일 압축 해제
-with tarfile.open('flutter.tar', 'r') as tar:
-    tar.extractall()
-"
+                python3 -c "import lzma, tarfile, shutil; f1=lzma.open('flutter.tar.xz','rb'); f2=open('flutter.tar','wb'); shutil.copyfileobj(f1,f2); f1.close(); f2.close(); tarfile.open('flutter.tar').extractall()"
               fi
               
               # 압축 해제 결과 확인
