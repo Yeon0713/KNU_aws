@@ -12,9 +12,9 @@ applications:
               # Clean start
               rm -rf flutter ~/.pub-cache
               
-              # Download Flutter
+              # Download Flutter (최신 안정 버전)
               echo "Flutter 다운로드..."
-              wget -q -O flutter.tar.xz https://storage.googleapis.com/flutter_infra_release/releases/stable/linux/flutter_linux_3.16.0-stable.tar.xz
+              wget -q -O flutter.tar.xz https://storage.googleapis.com/flutter_infra_release/releases/stable/linux/flutter_linux_3.24.0-stable.tar.xz
               
               # Extract using Python (most reliable method)
               echo "Flutter 압축 해제..."
