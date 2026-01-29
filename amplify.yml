@@ -35,32 +35,44 @@ applications:
               echo "=== preBuild 단계 완료 ==="
         build:
           commands:
-            # Force fresh build without cache
+            # Build with absolute Flutter path
             - |
               echo "=== 강제 새로운 빌드 시작 ==="
               echo "빌드 시간: $(date)"
               
-              # PATH 설정
-              export PATH="$PATH:$PWD/flutter/bin"
+              # Flutter 절대 경로 설정
+              FLUTTER_ROOT="/codebuild/output/src$(echo $CODEBUILD_SRC_DIR | cut -d'/' -f5-)/flutter"
+              FLUTTER_BIN="$FLUTTER_ROOT/bin/flutter"
+              
+              echo "Flutter 경로: $FLUTTER_BIN"
+              
+              # Flutter 존재 확인
+              if [ -f "$FLUTTER_BIN" ]; then
+                echo "✅ Flutter 바이너리 발견"
+                $FLUTTER_BIN --version
+              else
+                echo "❌ Flutter 바이너리를 찾을 수 없음"
+                echo "현재 작업 디렉토리: $(pwd)"
+                echo "상위 디렉토리 확인:"
+                ls -la ../
+                echo "Flutter 디렉토리 찾기:"
+                find .. -name "flutter" -type d 2>/dev/null || echo "Flutter 디렉토리 없음"
+                exit 1
+              fi
               
               # 기존 빌드 결과 삭제
               rm -rf build
               
-              # 현재 상태 확인
-              echo "현재 디렉토리: $(pwd)"
-              echo "Flutter 상태:"
-              flutter --version
-              
               # pubspec.yaml 확인
-              echo "pubspec.yaml 내용:"
-              head -20 pubspec.yaml
+              echo "pubspec.yaml 내용 (처음 10줄):"
+              head -10 pubspec.yaml
               
               # 강제 클린 빌드
               echo "Flutter 클린 실행..."
-              flutter clean
+              $FLUTTER_BIN clean
               
               echo "Flutter 웹 빌드 실행..."
-              flutter build web --web-renderer html --release --verbose
+              $FLUTTER_BIN build web --web-renderer html --release --verbose
               
               # 빌드 결과 확인
               echo "=== 빌드 결과 확인 ==="
