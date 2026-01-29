@@ -5,8 +5,9 @@ applications:
       phases:
         preBuild:
           commands:
-            # Download and install Flutter (without system package updates)
+            # Download and install Flutter and run all setup in one script
             - |
+              # Flutter 설치 또는 캐시 사용
               if [ ! -d "flutter" ]; then
                 echo "Flutter 설치 중..."
                 wget -O flutter.tar.xz https://storage.googleapis.com/flutter_infra_release/releases/stable/linux/flutter_linux_3.16.0-stable.tar.xz
@@ -16,22 +17,30 @@ applications:
               else
                 echo "Flutter가 이미 설치되어 있습니다 (캐시 사용)"
               fi
-            # Set Flutter path and verify installation
-            - "export PATH=\"$PATH:$PWD/flutter/bin\""
-            - "echo \"PATH 설정 완료\""
-            - "flutter --version"
-            - "flutter doctor -v"
-            # Get dependencies
-            - "echo \"Flutter 의존성 설치 중...\""
-            - "flutter pub get"
-            - "echo \"의존성 설치 완료\""
+              
+              # PATH 설정 및 Flutter 검증
+              export PATH="$PATH:$PWD/flutter/bin"
+              echo "PATH 설정 완료: $PATH"
+              
+              # Flutter 버전 확인
+              flutter --version
+              flutter doctor -v
+              
+              # 의존성 설치
+              echo "Flutter 의존성 설치 중..."
+              flutter pub get
+              echo "의존성 설치 완료"
         build:
           commands:
-            # Set Flutter path for build
-            - "export PATH=\"$PATH:$PWD/flutter/bin\""
-            - "echo \"Flutter 웹 빌드 시작...\""
-            - "flutter build web --web-renderer html --release --verbose"
-            - "echo \"빌드 완료\""
+            # Build Flutter web app in one script
+            - |
+              # PATH 설정
+              export PATH="$PATH:$PWD/flutter/bin"
+              echo "Flutter 웹 빌드 시작..."
+              
+              # 웹 빌드 실행
+              flutter build web --web-renderer html --release --verbose
+              echo "빌드 완료"
       artifacts:
         baseDirectory: build/web
         files:
