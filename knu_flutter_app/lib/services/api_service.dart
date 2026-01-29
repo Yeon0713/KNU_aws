@@ -3,7 +3,7 @@ import 'dart:io';
 import 'package:http/http.dart' as http;
 
 class ApiService {
-  static const String baseUrl = 'https://knu-health-alb-123456789.us-east-1.elb.amazonaws.com';
+  static const String baseUrl = 'https://fdd9fa5caa0eac14bb336cfafcb5f6e2-20286164.ap-northeast-2.elb.amazonaws.com';
   
   // 사용자 정보 모델
   static Map<String, dynamic> _createUserInfo(String name, int age, String gender, int height, int weight) {
