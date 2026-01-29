@@ -3,7 +3,7 @@ import 'dart:io';
 import 'package:http/http.dart' as http;
 
 class ApiService {
-  static const String baseUrl = 'http://10.111.28.35:8000';
+  static const String baseUrl = 'http://52.204.238.141:8000';
   
   // 사용자 정보 모델
   static Map<String, dynamic> _createUserInfo(String name, int age, String gender, int height, int weight) {
