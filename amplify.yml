@@ -5,29 +5,33 @@ applications:
       phases:
         preBuild:
           commands:
-            # Install required packages
-            - yum update -y
-            - yum install -y xz git curl unzip
-            # Download and install Flutter
+            # Download and install Flutter (without system package updates)
             - |
               if [ ! -d "flutter" ]; then
-                echo "Installing Flutter..."
+                echo "Flutter 설치 중..."
                 wget -O flutter.tar.xz https://storage.googleapis.com/flutter_infra_release/releases/stable/linux/flutter_linux_3.16.0-stable.tar.xz
                 tar xf flutter.tar.xz
                 rm flutter.tar.xz
+                echo "Flutter 설치 완료"
+              else
+                echo "Flutter가 이미 설치되어 있습니다 (캐시 사용)"
               fi
             # Set Flutter path and verify installation
             - export PATH="$PATH:$PWD/flutter/bin"
-            - echo $PATH
+            - echo "PATH: $PATH"
             - flutter --version
             - flutter doctor -v
             # Get dependencies
+            - echo "Flutter 의존성 설치 중..."
             - flutter pub get
+            - echo "의존성 설치 완료"
         build:
           commands:
             # Set Flutter path for build
             - export PATH="$PATH:$PWD/flutter/bin"
+            - echo "Flutter 웹 빌드 시작..."
             - flutter build web --web-renderer html --release --verbose
+            - echo "빌드 완료"
       artifacts:
         baseDirectory: build/web
         files:
