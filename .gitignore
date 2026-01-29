@@ -1,0 +1,95 @@
+# 테스트 및 개발 파일들
+test_api_connection.dart
+*.test.dart
+test/
+
+# Kiro 설정 파일들 (개발 환경 전용)
+.kiro/
+
+# 배포 관련 임시 파일들
+deploy/
+*.zip
+*.tar.gz
+
+# 환경 변수 및 설정 파일들
+.env
+.env.local
+.env.production
+.aws/
+
+# 데이터베이스 파일들
+*.db
+*.sqlite
+*.sqlite3
+
+# 로그 파일들
+*.log
+logs/
+
+# Python 관련
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+.venv/
+venv/
+ENV/
+env/
+
+# Flutter 관련
+**/build/
+**/.dart_tool/
+**/.flutter-plugins
+**/.flutter-plugins-dependencies
+**/.packages
+**/.pub-cache/
+**/.pub/
+**/ios/Flutter/flutter_assets/
+**/ios/Flutter/flutter_export_environment.sh
+**/ios/ServiceDefinitions.json
+**/ios/Runner/GeneratedPluginRegistrant.*
+
+# IDE 관련
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# 임시 파일들
+*.tmp
+*.temp
+*.bak
+*.backup
+
+# 문서 파일들 (선택적으로 제외)
+README.md
+CHANGELOG.md
+LICENSE
