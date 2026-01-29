@@ -1,0 +1,14 @@
+{
+	"folders": [
+		{
+			"name": "knu_aws",
+			"path": "../../.."
+		},
+		{
+			"name": ".aws",
+			"path": "../../../../Downloads/.aws"
+		}
+	],
+	"settings": {
+	}
+}

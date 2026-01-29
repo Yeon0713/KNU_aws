@@ -38,8 +38,6 @@ dist/
 downloads/
 eggs/
 .eggs/
-lib/
-lib64/
 parts/
 sdist/
 var/
@@ -52,6 +50,9 @@ MANIFEST
 venv/
 ENV/
 env/
+# Python lib 폴더만 제외 (Flutter lib 폴더는 포함)
+**/senior_supplement/**/lib/
+**/backend/**/lib/
 
 # Flutter 관련
 **/build/
