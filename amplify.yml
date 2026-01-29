@@ -5,162 +5,61 @@ applications:
       phases:
         preBuild:
           commands:
-            # Force cache invalidation and Flutter setup with xz installation
+            # Simple Flutter installation without complex debugging
             - |
-              echo "=== 캐시 무효화 및 Flutter 설치 시작 ==="
-              echo "빌드 시간: $(date)"
+              echo "=== Flutter 설치 시작 ==="
               
-              # 기존 Flutter 디렉토리 완전 삭제 (캐시 무효화)
-              rm -rf flutter
-              rm -rf ~/.pub-cache
+              # Clean start
+              rm -rf flutter ~/.pub-cache
               
-              # xz 패키지 설치 시도 (여러 방법)
-              echo "xz 패키지 설치 시도..."
-              if command -v yum >/dev/null 2>&1; then
-                echo "yum으로 xz 설치 시도..."
-                yum install -y xz 2>/dev/null || echo "yum 설치 실패 (권한 문제)"
-              fi
+              # Download Flutter
+              echo "Flutter 다운로드..."
+              wget -q -O flutter.tar.xz https://storage.googleapis.com/flutter_infra_release/releases/stable/linux/flutter_linux_3.16.0-stable.tar.xz
               
-              if command -v apt-get >/dev/null 2>&1; then
-                echo "apt-get으로 xz-utils 설치 시도..."
-                apt-get update && apt-get install -y xz-utils 2>/dev/null || echo "apt-get 설치 실패 (권한 문제)"
-              fi
-              
-              # xz 명령어 확인
-              if command -v xz >/dev/null 2>&1; then
-                echo "✅ xz 명령어 사용 가능"
-                xz --version
-              else
-                echo "❌ xz 명령어 없음 - 대체 방법 사용"
-              fi
-              
-              # Flutter 다운로드 및 설치
-              echo "Flutter 다운로드 중..."
-              wget -O flutter.tar.xz https://storage.googleapis.com/flutter_infra_release/releases/stable/linux/flutter_linux_3.16.0-stable.tar.xz
-              
-              # 압축 해제 (여러 방법 시도)
-              echo "Flutter 압축 해제 시도..."
-              if command -v xz >/dev/null 2>&1; then
-                echo "xz로 압축 해제..."
-                xz -d flutter.tar.xz && tar -xf flutter.tar
-              else
-                echo "Python으로 압축 해제 시도..."
-                python3 -c "import lzma, tarfile, shutil; f1=lzma.open('flutter.tar.xz','rb'); f2=open('flutter.tar','wb'); shutil.copyfileobj(f1,f2); f1.close(); f2.close(); tarfile.open('flutter.tar').extractall()"
-              fi
-              
-              # 압축 해제 결과 확인
-              if [ -d "flutter" ]; then
-                echo "✅ Flutter 압축 해제 성공"
-                ls -la flutter/
-              else
-                echo "❌ Flutter 압축 해제 실패"
-                echo "현재 디렉토리 내용:"
-                ls -la
-                exit 1
-              fi
-              
-              # 임시 파일 정리
+              # Extract using Python (most reliable method)
+              echo "Flutter 압축 해제..."
+              python3 -c "import lzma, tarfile; f=lzma.open('flutter.tar.xz','rb'); t=open('flutter.tar','wb'); t.write(f.read()); f.close(); t.close(); tarfile.open('flutter.tar').extractall()"
               rm -f flutter.tar.xz flutter.tar
               
-              # PATH 설정 및 Flutter 검증
-              export PATH="$PATH:$PWD/flutter/bin"
-              echo "PATH 설정: $PATH"
-              
-              # Flutter 실행 가능 여부 확인
-              if [ -f "flutter/bin/flutter" ]; then
-                echo "✅ Flutter 바이너리 존재함"
-                chmod +x flutter/bin/flutter
-                flutter/bin/flutter --version
-                flutter/bin/flutter doctor -v
-                
-                # 의존성 설치
-                echo "Flutter 의존성 설치 중..."
-                flutter/bin/flutter pub get
-              else
-                echo "❌ Flutter 바이너리가 존재하지 않음"
+              # Verify Flutter installation
+              if [ ! -f "flutter/bin/flutter" ]; then
+                echo "❌ Flutter 설치 실패"
                 exit 1
               fi
               
-              echo "=== preBuild 단계 완료 ==="
+              echo "✅ Flutter 설치 완료"
+              
         build:
           commands:
-            # Build with absolute Flutter path
+            # Simple Flutter web build
             - |
-              echo "=== 강제 새로운 빌드 시작 ==="
-              echo "빌드 시간: $(date)"
+              echo "=== Flutter 웹 빌드 시작 ==="
               
-              # Flutter 절대 경로 설정 (preBuild에서 설치된 위치)
-              FLUTTER_BIN="$PWD/flutter/bin/flutter"
+              # Set Flutter path
+              export PATH="$PWD/flutter/bin:$PATH"
               
-              echo "Flutter 경로: $FLUTTER_BIN"
+              # Enable web support
+              flutter config --enable-web --no-analytics
               
-              # Flutter 존재 확인
-              if [ -f "$FLUTTER_BIN" ]; then
-                echo "✅ Flutter 바이너리 발견"
-                $FLUTTER_BIN --version
-              else
-                echo "❌ Flutter 바이너리를 찾을 수 없음"
-                echo "현재 작업 디렉토리: $(pwd)"
-                echo "디렉토리 내용:"
-                ls -la
-                echo "Flutter 디렉토리 찾기:"
-                find . -name "flutter" -type d 2>/dev/null || echo "Flutter 디렉토리 없음"
+              # Get dependencies
+              flutter pub get
+              
+              # Build for web
+              flutter build web --release
+              
+              # Verify build output
+              if [ ! -f "build/web/index.html" ]; then
+                echo "❌ 웹 빌드 실패"
+                ls -la build/ || echo "build 디렉토리 없음"
                 exit 1
               fi
               
-              # 기존 빌드 결과 삭제
-              rm -rf build
+              echo "✅ 웹 빌드 성공"
+              ls -la build/web/
               
-              # pubspec.yaml 확인
-              echo "pubspec.yaml 내용 (처음 10줄):"
-              head -10 pubspec.yaml
-              
-              # 강제 클린 빌드
-              echo "Flutter 클린 실행..."
-              $FLUTTER_BIN clean
-              
-              echo "Flutter 웹 빌드 실행..."
-              echo "Flutter 웹 지원 활성화..."
-              $FLUTTER_BIN config --enable-web
-              
-              echo "Flutter 웹 빌드 시작 (상세 로그)..."
-              $FLUTTER_BIN build web --web-renderer html --release --verbose 2>&1 | tee flutter_build.log
-              
-              # 빌드 실패 시 로그 출력
-              if [ $? -ne 0 ]; then
-                echo "❌ Flutter 빌드 실패 - 상세 로그:"
-                echo "=== Flutter 빌드 로그 (마지막 50줄) ==="
-                tail -50 flutter_build.log
-                echo "=== Flutter doctor 진단 ==="
-                $FLUTTER_BIN doctor -v
-                echo "=== pubspec.yaml 전체 내용 ==="
-                cat pubspec.yaml
-                exit 1
-              fi
-              
-              # 빌드 결과 확인
-              echo "=== 빌드 결과 확인 ==="
-              if [ -d "build/web" ]; then
-                echo "✅ build/web 디렉토리 생성됨"
-                ls -la build/web/
-                if [ -f "build/web/index.html" ]; then
-                  echo "✅ index.html 파일 존재함"
-                  echo "파일 크기: $(wc -c < build/web/index.html) bytes"
-                else
-                  echo "❌ index.html 파일이 없음"
-                  exit 1
-                fi
-              else
-                echo "❌ build/web 디렉토리가 생성되지 않음"
-                echo "현재 디렉토리 내용:"
-                ls -la
-                exit 1
-              fi
-              
-              echo "=== 빌드 성공적으로 완료 ==="
       artifacts:
         baseDirectory: build/web
         files:
           - '**/*'
       cache:
-        paths: []  # 캐시 비활성화
+        paths: []
