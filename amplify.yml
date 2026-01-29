@@ -1,33 +1,18 @@
 version: 1
 applications:
-  - frontend:
+  - appRoot: knu_flutter_app
+    frontend:
       phases:
         preBuild:
           commands:
-            - cd knu_flutter_app
             - flutter pub get
         build:
           commands:
             - flutter build web --web-renderer html --release
       artifacts:
-        baseDirectory: knu_flutter_app/build/web
+        baseDirectory: build/web
         files:
           - '**/*'
       cache:
         paths:
           - ~/.pub-cache/**/*
-    appRoot: knu_flutter_app
-  - backend:
-      phases:
-        preBuild:
-          commands:
-            - cd senior_supplement/backend
-            - pip install -r requirements.txt
-        build:
-          commands:
-            - echo "Backend prepared for deployment"
-      artifacts:
-        baseDirectory: senior_supplement/backend
-        files:
-          - '**/*'
-    appRoot: senior_supplement/backend
