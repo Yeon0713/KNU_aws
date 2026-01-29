@@ -17,21 +17,21 @@ applications:
                 echo "Flutter가 이미 설치되어 있습니다 (캐시 사용)"
               fi
             # Set Flutter path and verify installation
-            - export PATH="$PATH:$PWD/flutter/bin"
-            - echo "PATH: $PATH"
-            - flutter --version
-            - flutter doctor -v
+            - "export PATH=\"$PATH:$PWD/flutter/bin\""
+            - "echo \"PATH 설정 완료\""
+            - "flutter --version"
+            - "flutter doctor -v"
             # Get dependencies
-            - echo "Flutter 의존성 설치 중..."
-            - flutter pub get
-            - echo "의존성 설치 완료"
+            - "echo \"Flutter 의존성 설치 중...\""
+            - "flutter pub get"
+            - "echo \"의존성 설치 완료\""
         build:
           commands:
             # Set Flutter path for build
-            - export PATH="$PATH:$PWD/flutter/bin"
-            - echo "Flutter 웹 빌드 시작..."
-            - flutter build web --web-renderer html --release --verbose
-            - echo "빌드 완료"
+            - "export PATH=\"$PATH:$PWD/flutter/bin\""
+            - "echo \"Flutter 웹 빌드 시작...\""
+            - "flutter build web --web-renderer html --release --verbose"
+            - "echo \"빌드 완료\""
       artifacts:
         baseDirectory: build/web
         files:
