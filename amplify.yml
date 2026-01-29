@@ -5,6 +5,8 @@ applications:
       phases:
         preBuild:
           commands:
+            - apt-get update
+            - apt-get install -y xz-utils
             - wget -O flutter.tar.xz https://storage.googleapis.com/flutter_infra_release/releases/stable/linux/flutter_linux_3.16.0-stable.tar.xz
             - tar xf flutter.tar.xz
             - export PATH="$PATH:`pwd`/flutter/bin"
