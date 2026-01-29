@@ -7,7 +7,7 @@ test/
 .kiro/
 
 # 배포 관련 임시 파일들
-deploy/
+# deploy/ - EC2 배포 스크립트는 포함
 *.zip
 *.tar.gz
 
