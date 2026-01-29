@@ -42,7 +42,7 @@ applications:
               flutter build web --web-renderer html --release --verbose
               echo "빌드 완료"
       artifacts:
-        baseDirectory: build/web
+        baseDirectory: knu_flutter_app/build/web
         files:
           - '**/*'
       cache:
