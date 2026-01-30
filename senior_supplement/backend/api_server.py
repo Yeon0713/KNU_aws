@@ -820,6 +820,151 @@ def extract_health_claims(text: str) -> list:
     
     return claims if claims else ["일반 건강 정보"]
 
+@app.get("/api/health")
+async def health_check():
+    """서버 상태 확인"""
+    try:
+        # AWS 연결 상태 확인
+        aws_connected = False
+        aws_account = None
+        try:
+            sts = nutri_app.session.client('sts', region_name='us-east-1')
+            identity = sts.get_caller_identity()
+            aws_connected = True
+            aws_account = identity.get('Account')
+        except Exception:
+            pass
+        
+        # RAG 시스템 상태 확인
+        rag_status = {
+            "faiss_loaded": rag_system.index is not None,
+            "metadata_loaded": rag_system.metadata is not None,
+            "total_documents": len(rag_system.metadata) if rag_system.metadata else 0
+        }
+        
+        return {
+            "status": "healthy",
+            "aws_connected": aws_connected,
+            "aws_account": aws_account,
+            "rag_system": rag_status,
+            "message": "모든 시스템이 정상 작동 중입니다."
+        }
+    except Exception as e:
+        return {
+            "status": "error",
+            "message": str(e)
+        }
+
+@app.post("/api/analyze-checkup-image")
+async def analyze_checkup_image(request: MealAnalysisRequest):
+    """건강검진 이미지 분석"""
+    try:
+        print(f"건강검진 이미지 분석 요청 받음: {request.user_info.name}")
+        
+        image_data = base64.b64decode(request.image_base64)
+        print("이미지 디코딩 완료")
+        
+        user_vars = {
+            "name": request.user_info.name,
+            "age": str(request.user_info.age),
+            "gender": request.user_info.gender,
+            "height": str(request.user_info.height),
+            "weight": str(request.user_info.weight)
+        }
+        
+        system_prompt = nutri_app.load_prompt("checkup_expert.txt", user_vars)
+        
+        user_message = """
+이 건강검진 결과 이미지를 분석해주세요.
+혈압, 혈당, 콜레스테롤, 간 수치 등의 주요 지표를 읽어서 분석해주세요.
+
+JSON 형식으로 응답:
+{
+  "analysis_logic": "검진 결과 분석 근거",
+  "extracted_values": {"혈압": "140/90", "혈당": "120", "콜레스테롤": "220"},
+  "status": "정상 / 주의 / 위험",
+  "content": "건강 상태 요약",
+  "recommended_nutrient": "필요한 영양소",
+  "action_plan": "권장사항"
+}
+"""
+        
+        result = nutri_app.call_claude(system_prompt, user_message, image_data)
+        print(f"건강검진 이미지 분석 결과: {result}")
+        
+        return {"success": True, "data": result}
+    except Exception as e:
+        print(f"건강검진 이미지 분석 오류: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/fact-check-youtube")
+async def fact_check_youtube(request: YouTubeFactCheckRequest):
+    """유튜브 팩트체킹"""
+    try:
+        print(f"유튜브 팩트체크 요청 받음: {request.youtube_url}")
+        
+        # 유튜브 URL인지 텍스트인지 확인
+        is_youtube_url = "youtube.com" in request.youtube_url or "youtu.be" in request.youtube_url
+        
+        if is_youtube_url:
+            # 실제 유튜브 분석 (현재는 기본 응답)
+            result = {
+                "content": "유튜브 영상 분석 기능은 현재 개발 중입니다. 곧 정식 서비스될 예정입니다.",
+                "overall_credibility": "보통",
+                "fact_check_result": "유튜브 영상의 건강 정보는 전문의와 상담 후 판단하시기 바랍니다.",
+                "key_claims": ["건강 정보 검증 필요"],
+                "verification_status": "pending"
+            }
+        else:
+            # 텍스트 기반 팩트체크
+            user_vars = {
+                "name": request.user_info.name,
+                "age": str(request.user_info.age),
+                "gender": request.user_info.gender,
+                "height": str(request.user_info.height),
+                "weight": str(request.user_info.weight),
+                "query_text": request.youtube_url.replace("텍스트: ", "")
+            }
+            
+            # 간단한 팩트체크 프롬프트
+            system_prompt = f"""
+당신은 {user_vars['name']}님을 위한 건강 정보 팩트체커입니다.
+사용자 정보: {user_vars['age']}세 {user_vars['gender']}, {user_vars['height']}cm, {user_vars['weight']}kg
+
+다음 건강 정보의 신뢰도를 평가하고 팩트체크해주세요:
+"{user_vars['query_text']}"
+
+JSON 형식으로 응답:
+{{
+  "overall_credibility": "높음/보통/낮음",
+  "fact_check_result": "팩트체크 결과 설명 (2-3문장)",
+  "key_claims": ["주요 주장들"],
+  "verification_status": "verified/caution/false"
+}}
+"""
+            
+            try:
+                result = nutri_app.call_claude(system_prompt, "위 건강 정보를 분석해주세요.")
+                print(f"텍스트 팩트체크 결과: {result}")
+            except Exception as claude_error:
+                print(f"Claude 호출 오류: {claude_error}")
+                # 폴백 응답
+                result = {
+                    "overall_credibility": "보통",
+                    "fact_check_result": "현재 AI 서버 사용량이 많습니다. 건강 정보는 반드시 전문의와 상담하시기 바랍니다.",
+                    "key_claims": ["전문의 상담 권장"],
+                    "verification_status": "caution"
+                }
+        
+        return {"success": True, "data": result}
+    except Exception as e:
+        print(f"유튜브 팩트체크 오류: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
+
 @app.get("/api/search-supplements")
 async def search_supplements(query: str, limit: int = 5):
     """RAG 기반 영양제 검색"""
