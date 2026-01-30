@@ -653,8 +653,7 @@ async def fact_check_youtube(request: YouTubeFactCheckRequest):
                 
                 print("자막 가져오기 시도 중...")
                 # 자막 가져오기
-                api = YouTubeTranscriptApi()
-                transcript_list = api.list(video_id)
+                transcript_list = YouTubeTranscriptApi.list_transcripts(video_id)
                 
                 # 한국어 자막 우선, 없으면 영어
                 transcript = None
